@@ -421,4 +421,62 @@ class StreamRepository:
         if (datetime.now() - episode.published_at).days < 30:
             return "New release that might interest you"
         
-        return "Recommended based on your listening history" 
+        return "Recommended based on your listening history"
+
+    @staticmethod
+    def get_recently_played_episodes(
+        db: Session,
+        user_id: int,
+        limit: int = 10,
+        days: int = 30
+    ) -> List[Dict[str, Any]]:
+        """
+        Get recently played episodes for a user.
+        
+        Args:
+            db: Database session
+            user_id: User ID to get recently played episodes for
+            limit: Maximum number of episodes to return
+            days: Number of days to look back for recently played episodes
+            
+        Returns:
+            List of dictionaries containing episode information and playback details
+        """
+        # Calculate the date threshold
+        date_threshold = datetime.now() - timedelta(days=days)
+        
+        # Query for recently played episodes
+        recent_episodes = db.query(
+            Episode,
+            Stream.last_position,
+            Stream.duration_seconds,
+            Stream.completed,
+            Stream.created_at
+        ).join(
+            Stream, Stream.episode_id == Episode.id
+        ).filter(
+            Stream.user_id == user_id,
+            Stream.created_at >= date_threshold
+        ).order_by(
+            desc(Stream.created_at)
+        ).limit(limit).all()
+        
+        # Format the results
+        result = []
+        for episode, last_position, duration_seconds, completed, created_at in recent_episodes:
+            result.append({
+                "episode_id": episode.id,
+                "title": episode.title,
+                "description": episode.description,
+                "podcast_id": episode.podcast_id,
+                "audio_url": episode.audio_url,
+                "cover_image": episode.cover_image,
+                "duration": episode.duration,
+                "last_position": last_position,
+                "duration_seconds": duration_seconds,
+                "completed": completed,
+                "played_at": created_at.isoformat(),
+                "progress_percentage": (last_position / episode.duration * 100) if episode.duration > 0 else 0
+            })
+        
+        return result 

@@ -21,7 +21,7 @@ from app.api.deps import get_current_user
 from app.models.user import User
 from app.models.podcast import Episode
 from app.models.stream import Stream
-from app.schemas.stream import StreamCreate, StreamUpdate, StreamResponse, EpisodeRecommendation
+from app.schemas.stream import StreamCreate, StreamUpdate, StreamResponse, EpisodeRecommendation, RecentlyPlayedEpisode
 
 router = APIRouter(
     prefix="/stream",
@@ -348,4 +348,24 @@ async def get_guest_recommendations(
             "recommendation_reason": "Trending episode"
         })
     
-    return recommendations 
+    return recommendations
+
+@router.get("/recently-played", response_model=List[RecentlyPlayedEpisode])
+async def get_recently_played_episodes(
+    limit: int = Query(10, ge=1, le=50, description="Maximum number of recently played episodes to return"),
+    days: int = Query(30, ge=1, le=365, description="Number of days to look back for recently played episodes"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get recently played episodes for the current user.
+    Returns episodes with their playback progress and completion status.
+    """
+    recent_episodes = StreamRepository.get_recently_played_episodes(
+        db=db,
+        user_id=current_user.id,
+        limit=limit,
+        days=days
+    )
+    
+    return recent_episodes 

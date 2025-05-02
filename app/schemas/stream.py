@@ -56,4 +56,21 @@ class EpisodeRecommendation(BaseModel):
     recommendation_score: float
     recommendation_reason: Optional[str] = None
     
+    model_config = ConfigDict(from_attributes=True)
+
+class RecentlyPlayedEpisode(BaseModel):
+    """Schema for recently played episodes"""
+    episode_id: int
+    title: str
+    description: str
+    podcast_id: int
+    audio_url: str
+    cover_image: Optional[str] = None
+    duration: float
+    last_position: float
+    duration_seconds: float
+    completed: bool
+    played_at: str
+    progress_percentage: float
+    
     model_config = ConfigDict(from_attributes=True) 
